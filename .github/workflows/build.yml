@@ -134,6 +134,7 @@ jobs:
             -c Debug \
             -p:RuntimeIdentifier=maccatalyst-x64 \
             -p:EnableCodeSigning=false \
+            -p:CreatePackage=false \
             -o ./publish-maccatalyst
 
       # Universal binary (Intel + Apple Silicon). Uncomment if you want
