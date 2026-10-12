@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>net9.0-android;net9.0-ios</TargetFrameworks>
-        
+        <TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
+
         <OutputType>Exe</OutputType>
         <UseMaui>true</UseMaui>
         <SingleProject>true</SingleProject>
@@ -15,6 +15,10 @@
         <!-- iOS -->
         <SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net9.0-ios'">14.0</SupportedOSPlatformVersion>
         <CodesignEntitlements Condition="'$(TargetFramework)' == 'net9.0-ios'">oxsolution.entitlements</CodesignEntitlements>
+
+        <!-- Mac Catalyst -->
+        <SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net9.0-maccatalyst'">15.0</SupportedOSPlatformVersion>
+        <CodesignEntitlements Condition="'$(TargetFramework)' == 'net9.0-maccatalyst'">Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
 
         <!-- Android -->
         <SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net9.0-android'">21.0</SupportedOSPlatformVersion>
