@@ -34,5 +34,24 @@
 	</array>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+	    <dict>
+	        <key>CFBundleTypeName</key>
+	        <string>Book Viewer Document</string>
+	        <key>LSHandlerRank</key>
+	        <string>Default</string>
+	        <key>LSItemContentTypes</key>
+	        <array>
+	            <string>public.xml</string>
+	            <string>public.folder</string>
+	            <string>public.html</string>
+	        </array>
+	    </dict>
+	</array>
 </dict>
 </plist>
