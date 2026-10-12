@@ -321,6 +321,25 @@ namespace BookViewer.Views
                     Log($"iOS share failed: {iex.Message}");
                     await DisplayAlert("Cannot share", iex.Message, "OK");
                 }
+#elif MACCATALYST
+                try
+                {
+                    var ok = BookViewer.Platforms.MacCatalyst.FileOpener.OpenFile(localPath);
+                    if (!ok)
+                    {
+                        // Fallback to MAUI launcher
+                        await Launcher.Default.OpenAsync(new OpenFileRequest
+                        {
+                            File = new ReadOnlyFile(localPath)
+                        });
+                    }
+                    Log($"MacCatalyst FileOpener returned {ok}");
+                }
+                catch (Exception mex)
+                {
+                    Log($"MacCatalyst open failed: {mex.Message}");
+                    await DisplayAlert("Cannot open", mex.Message, "OK");
+                } 
 #elif ANDROID
                 try
                 {
