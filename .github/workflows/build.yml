@@ -151,18 +151,26 @@ jobs:
 
       - name: Zip .app Bundle
         run: |
-          cd ./publish-maccatalyst
-          # Find the .app (its name matches the app display name)
-          APP=$(find . -maxdepth 2 -name "*.app" -type d | head -n 1)
-          if [ -z "$APP" ]; then
-            echo "No .app bundle found"
-            ls -la
+          APP_PATH=$(find ./bin/Debug/net9.0-maccatalyst/maccatalyst-x64 -maxdepth 1 -name "*.app" -type d | head -n 1)
+      
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app bundle found. Contents of publish dir:"
+            ls -la ./publish-maccatalyst/
+            echo "Contents of bin dir:"
+            find ./bin -name "*.app" -type d
             exit 1
           fi
-          echo "Zipping: $APP"
-          zip -r -y "BookViewer-macOS-Debug.zip" "$APP"
+      
+          echo "Found app at: $APP_PATH"
+          APP_NAME=$(basename "$APP_PATH")
+      
+          mkdir -p ./publish-maccatalyst
+          cp -R "$APP_PATH" ./publish-maccatalyst/
+      
+          cd ./publish-maccatalyst
+          zip -r -y "BookViewer-macOS-Debug.zip" "$APP_NAME"
           ls -la
-
+          
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
         with:
