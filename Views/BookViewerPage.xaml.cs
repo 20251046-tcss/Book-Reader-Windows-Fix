@@ -461,7 +461,9 @@ public partial class BookViewerPage : ContentPage
             {
             #if IOS
                 return await BookViewer.Platforms.iOS.WebViewCapture.CaptureHtmlAsync(html, 1024, 1309);
-            #elif ANDROID
+            #elif MACCATALYST
+                return await BookViewer.Platforms.MacCatalyst.WebViewCapture.CaptureHtmlAsync(html, 1024, 1309);
+            elif ANDROID
                 return await BookViewer.Platforms.Android.WebViewCapture.CaptureHtmlAsync(html, 1024, 1309);
             #elif WINDOWS
                 return await BookViewer.Platforms.Windows.WebViewCapture.CaptureHtmlAsync(html, 1024, 1309);
