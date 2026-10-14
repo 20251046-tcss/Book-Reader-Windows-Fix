@@ -268,27 +268,29 @@ public partial class BookViewerPage : ContentPage
         return contentHtml + overlayHtml;
     }
 
+    private string _lastRenderedHtml = "";
+    
     private void UpdateDisplay()
     {
         bool isTwoPage = _bookService.TwoPageSpread;
-
+    
         if (isTwoPage)
         {
             RightColumn.Width = new GridLength(1, GridUnitType.Star);
-
-            ContentWebView.Source = new HtmlWebViewSource { Html = _currentContentHtml };
+    
+            if (_lastRenderedHtml != _currentContentHtml)
+            {
+                _lastRenderedHtml = _currentContentHtml;
+                ContentWebView.Source = new HtmlWebViewSource { Html = _currentContentHtml };
+            }
             ContentWebView.IsVisible = true;
-
+    
             if (!string.IsNullOrEmpty(_bookService.NextPageHtml))
-            {
                 NextPageWebView.Source = new HtmlWebViewSource { Html = _bookService.NextPageHtml };
-            }
             else
-            {
                 NextPageWebView.Source = new HtmlWebViewSource { Html = $"<html><body style='background:{SurroundColor};'></body></html>" };
-            }
             NextPageWebView.IsVisible = true;
-
+    
             TeacherWebView.IsVisible = false;
             StudentWebView.IsVisible = false;
         }
@@ -296,26 +298,24 @@ public partial class BookViewerPage : ContentPage
         {
             RightColumn.Width = new GridLength(0);
             NextPageWebView.IsVisible = false;
-
+    
             string html;
             if (_currentViewMode == "teacher" && !string.IsNullOrEmpty(_currentTeacherFragment))
-            {
                 html = InjectAnswerOverlay(_currentContentHtml, _currentTeacherFragment, "teacherNotes");
-            }
             else if (_currentViewMode == "student" && !string.IsNullOrEmpty(_currentStudentFragment))
-            {
                 html = InjectAnswerOverlay(_currentContentHtml, _currentStudentFragment, "studentAnswers");
-            }
             else
-            {
                 html = _currentContentHtml;
+    
+            if (_lastRenderedHtml != html)
+            {
+                _lastRenderedHtml = html;
+                ContentWebView.Source = new HtmlWebViewSource { Html = html };
             }
-
-            ContentWebView.Source = new HtmlWebViewSource { Html = html };
             ContentWebView.IsVisible = true;
             TeacherWebView.IsVisible = false;
             StudentWebView.IsVisible = false;
-
+    
             UpdateViewModeButton();
         }
     }
