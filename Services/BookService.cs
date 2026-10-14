@@ -41,6 +41,25 @@ namespace BookViewer
         public int CurrentPageWidth { get; private set; } = 1024;
         public int CurrentPageHeight { get; private set; } = 1309;
 
+        private const int MaxImageCacheEntries = 32;
+        private readonly Queue<string> _imageCacheOrder = new();
+        
+        private string StoreInImageCache(string path, string data)
+        {
+            if (_imageCache.ContainsKey(path))
+                return _imageCache[path];
+        
+            while (_imageCacheOrder.Count >= MaxImageCacheEntries)
+            {
+                var oldest = _imageCacheOrder.Dequeue();
+                _imageCache.Remove(oldest);
+            }
+        
+            _imageCache[path] = data;
+            _imageCacheOrder.Enqueue(path);
+            return data;
+        }
+                
         private static string SurroundColor =>
             Application.Current?.RequestedTheme == AppTheme.Dark ? "#1C1C1E" : "#E8E8E8";
 
@@ -644,7 +663,7 @@ namespace BookViewer
                 };
         
                 var result = $"data:{mimeType};base64,{Convert.ToBase64String(bytes)}";
-                _imageCache[imagePath] = result;
+                StoreInImageCache(imagePath, result);
                 return result;
             }
             catch
@@ -1140,7 +1159,7 @@ body, .para, .base-content, .content-overlay {
 
                 var base64 = Convert.ToBase64String(bytes);
                 var result = $"data:{mimeType};base64,{base64}";
-                _imageCache[imagePath] = result;
+                StoreInImageCache(imagePath, result);
                 return result;
             }
             catch
