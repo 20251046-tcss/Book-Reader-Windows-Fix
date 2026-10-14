@@ -1,6 +1,6 @@
 #if WINDOWS
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;
 using System.IO;
@@ -26,40 +26,39 @@ namespace BookViewer.Platforms.Windows
                     return null;
                 }
 
-                // Everything touching WebView2 must happen on the UI thread.
                 return await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
                     Microsoft.UI.Xaml.Controls.WebView2 webView = null;
-                    Window hostWindow = null;
+                    Microsoft.UI.Xaml.Window hostWindow = null;
+                    Microsoft.UI.Xaml.Controls.Grid hostGrid = null;
 
                     try
                     {
-                        // WebView2 needs to be in a live visual tree with a real HWND.
-                        // Create a tiny off-screen window to host it.
-                        hostWindow = new Window
+                        // Host in a real WinUI window so WebView2 gets an HWND.
+                        hostGrid = new Microsoft.UI.Xaml.Controls.Grid
                         {
-                            Content = new Grid(),
-                            // Put it off-screen and tiny so it doesn't flash
+                            Width = width,
+                            Height = height
                         };
 
-                        var hostGrid = (Grid)hostWindow.Content;
-                        hostGrid.Width = width;
-                        hostGrid.Height = height;
+                        hostWindow = new Microsoft.UI.Xaml.Window
+                        {
+                            Content = hostGrid
+                        };
 
                         webView = new Microsoft.UI.Xaml.Controls.WebView2
                         {
                             Width = width,
                             Height = height,
-                            HorizontalAlignment = HorizontalAlignment.Left,
-                            VerticalAlignment = VerticalAlignment.Top
+                            HorizontalAlignment = Microsoft.UI.Xaml.HorizontalAlignment.Left,
+                            VerticalAlignment = Microsoft.UI.Xaml.VerticalAlignment.Top
                         };
                         hostGrid.Children.Add(webView);
 
-                        // Use a per-call user data folder to avoid concurrent lock issues.
+                        // Per-call user data folder avoids concurrent lock contention.
                         var userDataFolder = Path.Combine(
                             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                             "BookViewer", "WebView2", Guid.NewGuid().ToString("N"));
-
                         Directory.CreateDirectory(userDataFolder);
 
                         var options = new CoreWebView2EnvironmentOptions
@@ -72,14 +71,13 @@ namespace BookViewer.Platforms.Windows
 
                         await webView.EnsureCoreWebView2Async(env);
 
-                        // Disable things we don't need — faster + safer
+                        // Trim features we don't need — faster + safer.
                         webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
                         webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
                         webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                         webView.CoreWebView2.Settings.IsZoomControlEnabled = false;
                         webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
 
-                        // Wait for navigation with timeout
                         var navTcs = new TaskCompletionSource<bool>();
                         void OnNavCompleted(object s, CoreWebView2NavigationCompletedEventArgs e)
                         {
@@ -89,24 +87,20 @@ namespace BookViewer.Platforms.Windows
 
                         try
                         {
-                            // Important: use NavigateToString on a plain HTML string
                             webView.CoreWebView2.NavigateToString(html);
 
                             var completed = await Task.WhenAny(navTcs.Task, Task.Delay(20000));
-                            if (completed == navTcs.Task)
-                            {
-                                await navTcs.Task;
-                            }
-                            else
+                            if (completed != navTcs.Task)
                             {
                                 System.Diagnostics.Debug.WriteLine("WebView2 navigation timed out.");
                                 return null;
                             }
 
-                            // Give the renderer a moment to finish painting fonts/images
+                            await navTcs.Task;
+
+                            // Let fonts/images finish painting.
                             await Task.Delay(700);
 
-                            // Capture
                             using var ms = new MemoryStream();
                             using var stream = new InMemoryRandomAccessStream();
 
@@ -138,7 +132,7 @@ namespace BookViewer.Platforms.Windows
                             if (webView != null)
                             {
                                 webView.CoreWebView2?.Stop();
-                                if (webView.Parent is Grid g) g.Children.Remove(webView);
+                                hostGrid?.Children.Remove(webView);
                                 webView.Close();
                             }
                             hostWindow?.Close();
