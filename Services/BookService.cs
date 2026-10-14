@@ -599,55 +599,92 @@ namespace BookViewer
             }
         }
 
+        
+        public async Task<string> GetStepBackgroundImageAsync(string filePath)
+        {
+            var directory = Path.GetDirectoryName(filePath) ?? "";
+            var stepNumber = ParseStepIndex(Path.GetFileName(filePath));
+        
+            var imagesPath = Path.Combine(directory, "images");
+            if (Directory.Exists(imagesPath))
+            {
+                foreach (var name in new[]
+                {
+                    $"steps_{stepNumber}.jpg", $"steps_{stepNumber}.png",
+                    $"step_{stepNumber}.jpg",  $"step_{stepNumber}.png"
+                })
+                {
+                    var imagePath = Path.Combine(imagesPath, name);
+                    if (File.Exists(imagePath))
+                        return await ConvertImageToBase64HighQualityAsync(imagePath);
+                }
+            }
+        
+            return GetPlaceholderImage();
+        }
+
+                
+        private async Task<string> ConvertImageToBase64HighQualityAsync(string imagePath)
+        {
+            try
+            {
+                if (_imageCache.TryGetValue(imagePath, out var cached)) return cached;
+        
+                var bytes = await File.ReadAllBytesAsync(imagePath);
+                var ext = Path.GetExtension(imagePath).ToLowerInvariant();
+                var mimeType = ext switch
+                {
+                    ".png" => "image/png",
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".webp" => "image/webp",
+                    ".gif" => "image/gif",
+                    ".bmp" => "image/bmp",
+                    ".svg" => "image/svg+xml",
+                    _ => "image/jpeg"
+                };
+        
+                var result = $"data:{mimeType};base64,{Convert.ToBase64String(bytes)}";
+                _imageCache[imagePath] = result;
+                return result;
+            }
+            catch
+            {
+                return GetPlaceholderImage();
+            }
+        }
+                
         private async Task<string> ProcessHtmlContent(string htmlContent, string filePath)
         {
             try
             {
                 string directory = Path.GetDirectoryName(filePath) ?? "";
                 string fileName = Path.GetFileName(filePath) ?? "";
-
+        
                 if (IsPureStepsFile(fileName) && fileName.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
                 {
-                    string bgImage = GetStepBackgroundImage(filePath);
+                    string bgImage = await GetStepBackgroundImageAsync(filePath);
                     string contentHtml = await ExtractContentFromHtmlFile(filePath, fileName, directory);
                     string fontCss = await GetFontCssWithEmbeddedFonts(directory);
-
+        
                     int pageWidth = 1024;
                     int pageHeight = 1309;
-
+        
                     var rezMatch = Regex.Match(htmlContent,
                         @"id\s*=\s*[""']rez[""'][^>]*style\s*=\s*[""'][^""']*width\s*:\s*(\d+)px[^""']*height\s*:\s*(\d+)px",
                         RegexOptions.IgnoreCase);
-
+        
                     if (rezMatch.Success)
                     {
                         if (int.TryParse(rezMatch.Groups[1].Value, out int w)) pageWidth = w;
                         if (int.TryParse(rezMatch.Groups[2].Value, out int h)) pageHeight = h;
-                        Log($"Detected page size from #rez: {pageWidth}x{pageHeight}");
                     }
-                    else
-                    {
-                        var bgMatch = Regex.Match(htmlContent,
-                            @"class\s*=\s*[""']bgcls[""'][^>]*style\s*=\s*[""'][^""']*width\s*:\s*(\d+)px[^""']*height\s*:\s*(\d+)px",
-                            RegexOptions.IgnoreCase);
-                        if (bgMatch.Success)
-                        {
-                            if (int.TryParse(bgMatch.Groups[1].Value, out int w)) pageWidth = w;
-                            if (int.TryParse(bgMatch.Groups[2].Value, out int h)) pageHeight = h;
-                            Log($"Detected page size from .bgcls: {pageWidth}x{pageHeight}");
-                        }
-                        else
-                        {
-                            Log("Could not detect page size, using default 1024x1309");
-                        }
-                    }
-
+        
                     CurrentPageWidth = pageWidth;
                     CurrentPageHeight = pageHeight;
-
+        
                     return BuildOverlayHtml(bgImage, contentHtml, fileName, fontCss, pageWidth, pageHeight);
                 }
-
+        
                 return htmlContent;
             }
             catch (Exception ex)
@@ -656,7 +693,6 @@ namespace BookViewer
                 return htmlContent;
             }
         }
-
         private async Task<string> ExtractContentFromHtmlFile(string filePath, string fileName, string directory)
         {
             string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
