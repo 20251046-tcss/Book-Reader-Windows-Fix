@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
     <PropertyGroup>
-        <TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
 
         <OutputType>Exe</OutputType>
         <UseMaui>true</UseMaui>
         <SingleProject>true</SingleProject>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        
+
         <ApplicationId>com.oxsolution.abacusviewer</ApplicationId>
         <ApplicationVersion>1</ApplicationVersion>
         <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
@@ -42,23 +44,12 @@
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.0" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
         <PackageReference Include="PdfSharpCore" Version="1.3.65" />
-    </ItemGroup>
-    
-    <ItemGroup>
-        <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
-        <PackageReference Include="PdfSharpCore" Version="1.3.65" />
-    
-        <!-- WebView2 for Windows capture + runtime -->
-        <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2592.51" Condition="'$(TargetFramework)' == 'net9.0-windows10.0.19041.0'" />
-    </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
-        <PackageReference Include="PdfSharpCore" Version="1.3.65" />
+        <!--
+            WebView2 is brought in transitively by Microsoft.Maui.Core on Windows.
+            Do NOT pin an older version here or you get NU1605 (downgrade error).
+            If you must pin, use >= 1.0.2792.45 to match MAUI 9.0.0.
+        -->
     </ItemGroup>
 
     <ItemGroup>
@@ -68,4 +59,5 @@
         <MauiFont Include="Resources\Fonts\*" />
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
+
 </Project>
